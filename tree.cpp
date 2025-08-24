@@ -29,7 +29,6 @@ static Node* insert(Node* root, Node* parent, int val, int &idcounter){
     if(val <= root->val){
         root->left = insert(root->left, root, val, idcounter);
     } else {
-        // duplicates go to the right
         root->right = insert(root->right, root, val, idcounter);
     }
     return root;
