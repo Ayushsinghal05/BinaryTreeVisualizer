@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BST Visualizer (C++ ➜ WebAssembly)</title>
+  <style>
+    :root{ --gapx: 90; --gapy: 80; }
+    body{ font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; margin: 0; background:#0b1020; color:#e9edf7; }
+    header{ padding:20px 24px; border-bottom:1px solid #1c2340; background:#0e1430; position:sticky; top:0; z-index:1; }
+    h1{ font-size:18px; margin:0 0 8px; }
+    .bar{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    input[type=text]{ flex:1; min-width:240px; padding:12px 14px; border-radius:12px; border:1px solid #2a356a; background:#12193a; color:#fff; outline:none; }
+    button{ padding:12px 16px; border-radius:12px; border:1px solid #2a356a; background:#172056; color:#fff; cursor:pointer; }
+    button:hover{ filter:brightness(1.1); }
+    #svgwrap{ overflow:auto; height: calc(100vh - 88px); }
+    svg{ display:block; margin:24px auto; background:#0f1533; border-radius:16px; box-shadow:0 6px 30px rgba(0,0,0,.3); }
+    .node{ filter: drop-shadow(0 2px 4px rgba(0,0,0,.5)); }
+    .label{ font: 14px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; fill:#e9edf7; text-anchor: middle; dominant-baseline: middle; }
+    .edge{ stroke:#6f83ff; stroke-width:2; opacity:.8; }
+    .circle{ fill:#1c2a7a; stroke:#9fb1ff; stroke-width:2; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Binary Search Tree Visualizer</h1>
+    <div class="bar">
+      <input id="nums" type="text" placeholder="Enter numbers, e.g. 8 3 10 1 6 14 4 7 13" value="8 3 10 1 6 14 4 7 13"/>
+      <button id="build">Build Tree</button>
+      <small id="status"></small>
+    </div>
+  </header>
+
+  <div id="svgwrap"><svg id="viz" width="1200" height="700" viewBox="0 0 1200 700" aria-label="BST visualization" role="img"></svg></div>
+
+  <script type="module">
+    import createModule from './tree.js';
+    let Module = await createModule();
+
+    const status = document.getElementById('status');
+    const svg = document.getElementById('viz');
+
+    function clearSVG(){ while(svg.firstChild) svg.removeChild(svg.firstChild); }
+
+    function render(json){
+      const gapx = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gapx')) || 90;
+      const gapy = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gapy')) || 80;
+
+      const nodes = json.nodes || []; const edges = json.edges || [];
+      if(nodes.length === 0){ status.textContent = 'No nodes'; clearSVG(); return; }
+
+      const maxX = Math.max(...nodes.map(n=>n.x));
+      const maxY = Math.max(...nodes.map(n=>n.y));
+      const pad = 60;
+      const w = Math.max(600, pad*2 + (maxX+1)*gapx);
+      const h = Math.max(300, pad*2 + (maxY+1)*gapy);
+      svg.setAttribute('width', w);
+      svg.setAttribute('height', h);
+      svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+      const pos = new Map(nodes.map(n => [n.id, {cx: pad + n.x*gapx, cy: pad + n.y*gapy, v:n.value}]));
+
+      // edges
+      for(const e of edges){
+        const a = pos.get(e.from), b = pos.get(e.to);
+        if(!a||!b) continue;
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1', a.cx);
+        line.setAttribute('y1', a.cy);
+        line.setAttribute('x2', b.cx);
+        line.setAttribute('y2', b.cy);
+        line.setAttribute('class','edge');
+        svg.appendChild(line);
+      }
+
+      // nodes
+      for(const [id, p] of pos){
+        const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+        g.setAttribute('class','node');
+        const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+        c.setAttribute('r', 18);
+        c.setAttribute('cx', p.cx);
+        c.setAttribute('cy', p.cy);
+        c.setAttribute('class','circle');
+        const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+        t.textContent = p.v;
+        t.setAttribute('x', p.cx);
+        t.setAttribute('y', p.cy+1);
+        t.setAttribute('class','label');
+        g.appendChild(c); g.appendChild(t);
+        svg.appendChild(g);
+      }
+    }
+
+    function build(){
+      try{
+        const input = (document.getElementById('nums').value || '').trim();
+        if(!input){ status.textContent = 'Enter some numbers'; clearSVG(); return; }
+        const fn = Module.cwrap('build_tree_json','string',['string']);
+        const jsonStr = fn(input);
+        const data = JSON.parse(jsonStr);
+        render(data);
+        status.textContent = `Built ${data.nodes.length} nodes`;
+      }catch(err){
+        console.error(err);
+        status.textContent = 'Error: ' + (err && err.message ? err.message : err);
+      }
+    }
+
+    document.getElementById('build').addEventListener('click', build);
+    document.getElementById('nums').addEventListener('keydown', e=>{ if(e.key==='Enter') build(); });
+
+    // initial render
+    build();
+  </script>
+</body>
+</html>
