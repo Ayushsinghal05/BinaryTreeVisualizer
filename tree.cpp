@@ -26,7 +26,7 @@ static Node* insert(Node* root, Node* parent, int val, int &idcounter){
         n->depth = parent ? parent->depth + 1 : 0;
         return n;
     }
-    if(val < root->val){
+    if(val <= root->val){
         root->left = insert(root->left, root, val, idcounter);
     } else {
         // duplicates go to the right

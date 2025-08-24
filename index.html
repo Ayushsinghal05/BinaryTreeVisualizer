@@ -27,6 +27,7 @@
     <div class="bar">
       <input id="nums" type="text" placeholder="Enter numbers, e.g. 8 3 10 1 6 14 4 7 13" value="8 3 10 1 6 14 4 7 13"/>
       <button id="build">Build Tree</button>
+      <button id="reset">Reset</button> 
       <small id="status"></small>
     </div>
   </header>
@@ -106,9 +107,15 @@
       }
     }
 
+    function resetTree() {
+        clearSVG();                 // clear all SVG nodes/edges
+        status.textContent = '';    // clear status message
+        document.getElementById('nums').value = ''; // clear input field
+    }
+
     document.getElementById('build').addEventListener('click', build);
     document.getElementById('nums').addEventListener('keydown', e=>{ if(e.key==='Enter') build(); });
-
+    document.getElementById('reset').addEventListener('click', resetTree)
     // initial render
     build();
   </script>
