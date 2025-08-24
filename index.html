@@ -96,8 +96,7 @@
       try{
         const input = (document.getElementById('nums').value || '').trim();
         if(!input){ status.textContent = 'Enter some numbers'; clearSVG(); return; }
-        const fn = Module.cwrap('build_tree_json','string',['string']);
-        const jsonStr = fn(input);
+        const jsonStr = Module.build_tree_json(input);
         const data = JSON.parse(jsonStr);
         render(data);
         status.textContent = `Built ${data.nodes.length} nodes`;
